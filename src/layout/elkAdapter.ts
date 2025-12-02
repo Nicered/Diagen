@@ -1,6 +1,7 @@
 import ELK, { ElkNode, ElkExtendedEdge, ElkPort } from 'elkjs/lib/elk.bundled.js';
 import type { DiagramModel } from '../core/DiagramModel';
 import type { DiagramNode, DiagramGroup, DiagramEdge, Direction } from '../types';
+import { inferGroupDirection } from './directionInference';
 
 // Default node dimensions
 const DEFAULT_NODE_WIDTH = 150;
@@ -94,7 +95,7 @@ export class ElkLayoutAdapter {
     const groupMap = new Map<string, ElkNode>();
 
     for (const group of model.groups) {
-      const elkGroup = this.groupToElkNode(group);
+      const elkGroup = this.groupToElkNode(group, model, direction);
       groupMap.set(group.id, elkGroup);
 
       // Add to parent or root
@@ -117,8 +118,28 @@ export class ElkLayoutAdapter {
       }
     }
 
-    // Add edges
-    rootGraph.edges = model.edges.map((edge) => this.edgeToElkEdge(edge));
+    // Add edges - place them in the appropriate container
+    // Build a map of node -> parent group
+    const nodeParentMap = new Map<string, string | undefined>();
+    for (const node of model.nodes) {
+      nodeParentMap.set(node.id, node.parentId);
+    }
+
+    for (const edge of model.edges) {
+      const elkEdge = this.edgeToElkEdge(edge);
+      const sourceParent = nodeParentMap.get(edge.source);
+      const targetParent = nodeParentMap.get(edge.target);
+
+      // If both nodes are in the same group, add edge to that group
+      if (sourceParent && sourceParent === targetParent && groupMap.has(sourceParent)) {
+        const group = groupMap.get(sourceParent)!;
+        if (!group.edges) group.edges = [];
+        group.edges.push(elkEdge);
+      } else {
+        // Otherwise add to root
+        rootGraph.edges!.push(elkEdge);
+      }
+    }
 
     return rootGraph;
   }
@@ -184,11 +205,20 @@ export class ElkLayoutAdapter {
   /**
    * Convert a diagram group to ELK compound node
    */
-  private groupToElkNode(group: DiagramGroup): ElkNode {
+  private groupToElkNode(
+    group: DiagramGroup,
+    model: DiagramModel,
+    globalDirection: Direction
+  ): ElkNode {
+    // Use explicit direction, or infer from group structure
+    const direction = inferGroupDirection(group, model, globalDirection);
+
     return {
       id: group.id,
       labels: group.label ? [{ text: group.label }] : [],
       layoutOptions: {
+        'elk.algorithm': 'layered',
+        'elk.direction': DIRECTION_MAP[direction],
         'elk.padding': `[top=${DEFAULT_GROUP_PADDING + 20},left=${DEFAULT_GROUP_PADDING},bottom=${DEFAULT_GROUP_PADDING},right=${DEFAULT_GROUP_PADDING}]`,
       },
       children: [],

@@ -440,6 +440,7 @@ class DiagenVisitor extends BaseCstVisitor {
       style: this.buildNodeStyle(attrs),
       children: [],
       parentId: parseContext.currentGroupId,
+      direction: attrs.direction as 'TB' | 'BT' | 'LR' | 'RL' | undefined,
     };
 
     parseContext.groups.set(groupId, group);

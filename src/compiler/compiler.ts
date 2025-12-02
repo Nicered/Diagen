@@ -87,6 +87,7 @@ export class Compiler {
         label: group.label,
         style: group.style,
         parentId: group.parentId,
+        direction: group.direction,
         position: group.position,
         size: group.size,
         children: group.children ?? [],
