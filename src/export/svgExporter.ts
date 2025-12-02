@@ -277,7 +277,55 @@ function renderShape(
 }
 
 /**
- * Render an edge as SVG
+ * Calculate the best connection points between two nodes
+ */
+function getConnectionPoints(
+  sourceNode: DiagramNode,
+  targetNode: DiagramNode
+): { sx: number; sy: number; tx: number; ty: number; side: 'top' | 'bottom' | 'left' | 'right' } {
+  const sw = sourceNode.size?.width ?? DEFAULT_NODE_WIDTH;
+  const sh = sourceNode.size?.height ?? DEFAULT_NODE_HEIGHT;
+  const tw = targetNode.size?.width ?? DEFAULT_NODE_WIDTH;
+  const th = targetNode.size?.height ?? DEFAULT_NODE_HEIGHT;
+
+  const sx0 = sourceNode.position?.x ?? 0;
+  const sy0 = sourceNode.position?.y ?? 0;
+  const tx0 = targetNode.position?.x ?? 0;
+  const ty0 = targetNode.position?.y ?? 0;
+
+  // Center points
+  const scx = sx0 + sw / 2;
+  const scy = sy0 + sh / 2;
+  const tcx = tx0 + tw / 2;
+  const tcy = ty0 + th / 2;
+
+  const dx = tcx - scx;
+  const dy = tcy - scy;
+
+  // Determine primary direction
+  if (Math.abs(dy) > Math.abs(dx)) {
+    // Vertical connection
+    if (dy > 0) {
+      // Target is below source
+      return { sx: scx, sy: sy0 + sh, tx: tcx, ty: ty0, side: 'bottom' };
+    } else {
+      // Target is above source
+      return { sx: scx, sy: sy0, tx: tcx, ty: ty0 + th, side: 'top' };
+    }
+  } else {
+    // Horizontal connection
+    if (dx > 0) {
+      // Target is to the right
+      return { sx: sx0 + sw, sy: scy, tx: tx0, ty: tcy, side: 'right' };
+    } else {
+      // Target is to the left
+      return { sx: sx0, sy: scy, tx: tx0 + tw, ty: tcy, side: 'left' };
+    }
+  }
+}
+
+/**
+ * Render an edge as SVG with smooth curves
  */
 function renderEdge(edge: DiagramEdge, model: DiagramModel): string {
   const sourceNode = model.getNode(edge.source);
@@ -287,10 +335,7 @@ function renderEdge(edge: DiagramEdge, model: DiagramModel): string {
     return '';
   }
 
-  const sourceX = (sourceNode.position?.x ?? 0) + (sourceNode.size?.width ?? DEFAULT_NODE_WIDTH) / 2;
-  const sourceY = (sourceNode.position?.y ?? 0) + (sourceNode.size?.height ?? DEFAULT_NODE_HEIGHT);
-  const targetX = (targetNode.position?.x ?? 0) + (targetNode.size?.width ?? DEFAULT_NODE_WIDTH) / 2;
-  const targetY = targetNode.position?.y ?? 0;
+  const { sx, sy, tx, ty, side } = getConnectionPoints(sourceNode, targetNode);
 
   const style = edge.style || {};
   const stroke = style.stroke ?? '#475569';
@@ -301,9 +346,21 @@ function renderEdge(edge: DiagramEdge, model: DiagramModel): string {
     strokeDasharray = '5,5';
   }
 
-  // Simple straight line with orthogonal routing
-  const midY = (sourceY + targetY) / 2;
-  const path = `M${sourceX},${sourceY} L${sourceX},${midY} L${targetX},${midY} L${targetX},${targetY}`;
+  // Create smooth bezier curve based on connection direction
+  let path: string;
+  const controlOffset = Math.min(Math.abs(tx - sx), Math.abs(ty - sy), 50) + 30;
+
+  if (side === 'bottom' || side === 'top') {
+    // Vertical connection - use vertical bezier
+    const cy1 = side === 'bottom' ? sy + controlOffset : sy - controlOffset;
+    const cy2 = side === 'bottom' ? ty - controlOffset : ty + controlOffset;
+    path = `M${sx},${sy} C${sx},${cy1} ${tx},${cy2} ${tx},${ty}`;
+  } else {
+    // Horizontal connection - use horizontal bezier
+    const cx1 = side === 'right' ? sx + controlOffset : sx - controlOffset;
+    const cx2 = side === 'right' ? tx - controlOffset : tx + controlOffset;
+    path = `M${sx},${sy} C${cx1},${sy} ${cx2},${ty} ${tx},${ty}`;
+  }
 
   let svg = `    <g class="edge" id="edge-${edge.id}">
       <path d="${path}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"${
@@ -312,8 +369,9 @@ function renderEdge(edge: DiagramEdge, model: DiagramModel): string {
 `;
 
   if (edge.label) {
-    const labelX = (sourceX + targetX) / 2;
-    const labelY = midY;
+    // Place label at the midpoint of the curve
+    const labelX = (sx + tx) / 2;
+    const labelY = (sy + ty) / 2;
     svg += `      <rect x="${labelX - 20}" y="${labelY - 10}" width="40" height="20" fill="white" stroke="#e0e0e0" rx="4"/>
       <text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-family="system-ui, sans-serif">${escapeXml(edge.label)}</text>
 `;

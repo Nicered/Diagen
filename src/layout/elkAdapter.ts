@@ -29,7 +29,7 @@ const DEFAULT_LAYOUT_OPTIONS: LayoutOptions = {
   direction: 'TB',
   nodeSpacing: 50,
   layerSpacing: 80,
-  edgeRouting: 'ORTHOGONAL',
+  edgeRouting: 'SPLINES',
 };
 
 /**
