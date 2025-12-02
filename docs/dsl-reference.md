@@ -346,19 +346,72 @@ group Backend [label: "백엔드 서비스"] {
 }
 ```
 
-### 그룹 스타일 속성
+### 그룹 속성
 
 ```
-group MyGroup [label: "그룹 이름", fill: #f0f0f0, stroke: #333] {
+group MyGroup [label: "그룹 이름", direction: LR, fill: #f0f0f0, stroke: #333] {
   ...
 }
 ```
 
-| 속성 | 설명 |
-|------|------|
-| `label` | 그룹 헤더에 표시될 이름 |
-| `fill` | 그룹 배경색 |
-| `stroke` | 그룹 테두리색 |
+| 속성 | 타입 | 설명 |
+|------|------|------|
+| `label` | 문자열 | 그룹 헤더에 표시될 이름 |
+| `direction` | 문자열 | 그룹 내부 레이아웃 방향 (`TB`, `BT`, `LR`, `RL`) |
+| `fill` | 색상 | 그룹 배경색 |
+| `stroke` | 색상 | 그룹 테두리색 |
+
+### 그룹 내부 레이아웃 방향
+
+그룹 내 노드들의 배치 방향을 지정할 수 있습니다. 이를 통해 전체 다이어그램과 다른 방향으로 그룹 내부를 레이아웃할 수 있습니다.
+
+```
+@diagram
+---
+direction: TB    # 전체는 위→아래
+---
+
+group Backend [label: "백엔드", direction: LR] {
+  API: "API 서버"
+  Worker: "Worker"
+  Cache: "Redis" [cylinder]
+}
+
+# API → Worker → Cache 가 좌→우로 배치됨
+Backend.API -> Backend.Worker -> Backend.Cache
+```
+
+#### 방향별 배치
+
+| 방향 | 설명 | 노드 배치 |
+|------|------|----------|
+| `TB` | Top to Bottom | 위에서 아래로 (세로) |
+| `BT` | Bottom to Top | 아래에서 위로 (세로) |
+| `LR` | Left to Right | 좌에서 우로 (가로) |
+| `RL` | Right to Left | 우에서 좌로 (가로) |
+
+#### 자동 방향 추론
+
+`direction`을 명시하지 않으면 그룹 내부 구조를 분석하여 자동으로 최적의 방향을 추론합니다:
+
+- **독립적인 노드들** (연결 없음): 수평 배치 (`LR`)
+- **체인 연결** (A→B→C): 수평 배치 (`LR`)
+- **팬아웃/팬인 패턴** (하나에서 여러 개로): 수평 배치 (`LR`)
+- **기타**: 전체 다이어그램 방향 따름
+
+```
+@diagram
+---
+direction: TB
+---
+
+# 그룹 내부 연결이 없으면 자동으로 LR (수평) 배치
+group Database [label: "데이터베이스"] {
+  Primary: "Primary DB" [cylinder]
+  Replica: "Replica DB" [cylinder]
+}
+# Primary와 Replica가 나란히 수평 배치됨
+```
 
 ### 그룹 내 노드 참조
 
