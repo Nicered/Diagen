@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Commit message validation hook
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Colors
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+error() {
+    echo -e "${RED}❌ 커밋 메시지 오류${NC}"
+    echo ""
+    echo "$1"
+    exit 1
+}
+
+# Check for Claude signature
+if echo "$COMMIT_MSG" | grep -qE "(🤖 Generated with \[Claude|Co-Authored-By: Claude)"; then
+    error "클로드 서명이 포함되어 있습니다.
+다음 내용을 제거해주세요:
+  - 🤖 Generated with [Claude Code]
+  - Co-Authored-By: Claude"
+fi
+
+# Count bullet points (lines starting with - or *)
+BULLET_COUNT=$(echo "$COMMIT_MSG" | grep -cE "^[[:space:]]*[-*]")
+MAX_BULLETS=4
+
+if [ "$BULLET_COUNT" -gt "$MAX_BULLETS" ]; then
+    error "불릿 포인트가 ${MAX_BULLETS}개를 초과합니다.
+현재 불릿 개수: ${BULLET_COUNT}
+최대 허용: ${MAX_BULLETS}개"
+fi
+
+exit 0

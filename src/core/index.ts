@@ -1,0 +1,1 @@
+export { DiagramModel } from './DiagramModel';

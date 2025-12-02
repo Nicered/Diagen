@@ -1,0 +1,61 @@
+{
+  "name": "diagen",
+  "version": "0.1.0",
+  "description": "Code-based infographic, architecture diagram, and UML generator",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "playground": "pnpm --filter diagen-playground dev",
+    "playground:build": "pnpm --filter diagen-playground build",
+    "playground:legacy": "npx tsx playground-legacy/server.ts"
+  },
+  "keywords": [
+    "diagram",
+    "infographic",
+    "uml",
+    "architecture",
+    "dsl",
+    "visualization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "prettier": "^3.7.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.0.14"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.9.3",
+    "chevrotain": "^11.0.3",
+    "elkjs": "^0.11.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
